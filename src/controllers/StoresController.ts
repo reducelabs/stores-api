@@ -20,7 +20,32 @@ export default class StoresController {
     return response.json({ store });
   }
 
-  async create(request: Request, response: Response) {}
+  async create(request: Request, response: Response) {
+    const {
+      name,
+      email,
+      image_url,
+      whatsapp,
+      city,
+      uf,
+      latitude,
+      longitude
+    } = request.body;
+    const store = {
+      name,
+      email,
+      image_url,
+      whatsapp,
+      city,
+      uf,
+      latitude,
+      longitude
+    };
+    const trx = await knex.transaction();
+    const [idInserted] = await trx('stores').insert(store);
+    await trx.commit();
+    return response.json(idInserted);
+  }
 
   async update(request: Request, response: Response) {}
 
