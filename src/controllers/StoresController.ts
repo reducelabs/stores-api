@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import knex from '../database/connection';
+import { v4 as uuid } from 'uuid';
+import identity from '../services/identity';
 
 export default class StoresController {
   async index(request: Request, response: Response) {
@@ -21,30 +23,33 @@ export default class StoresController {
   }
 
   async create(request: Request, response: Response) {
-    const {
+    const { name, email, phone, password, store } = request.body;
+    const user = {
       name,
       email,
-      image_url,
-      whatsapp,
-      city,
-      uf,
-      latitude,
-      longitude
-    } = request.body;
-    const store = {
-      name,
-      email,
-      image_url,
-      whatsapp,
-      city,
-      uf,
-      latitude,
-      longitude
+      phone_number: phone,
+      password,
     };
-    const trx = await knex.transaction();
-    const [idInserted] = await trx('stores').insert(store);
-    await trx.commit();
-    return response.json(idInserted);
+    try {
+      const responseUser = await identity.post('/users', user);
+
+      const newStoreId = store.id ? store.id : uuid();
+      const newStore = {
+        id: newStoreId,
+        user_id: responseUser.data.id,
+        phone_number: phone,
+        email: email,
+        cnpj: store.cnpj,
+        name: store.name,
+        company_name: store.company_name,
+      };
+      const trx = await knex.transaction();
+      await trx('stores').insert(newStore);
+      await trx.commit();
+      return response.json({ id: newStoreId });
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async update(request: Request, response: Response) {}
